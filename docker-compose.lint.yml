@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Backend linting
+  backend-lint:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "
+        echo '=== Running Ruff Linter ===' &&
+        ruff check . &&
+        echo '=== Running Black Formatter Check ===' &&
+        black --check . &&
+        echo '=== Running MyPy Type Checker ===' &&
+        mypy app/ --ignore-missing-imports &&
+        echo '=== All Backend Linting Passed ==='
+      "
+    profiles:
+      - lint
+
+  # Frontend linting
+  frontend-lint:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: >
+      sh -c "
+        echo '=== Running ESLint ===' &&
+        npm run lint &&
+        echo '=== Running TypeScript Type Check ===' &&
+        npm run type-check &&
+        echo '=== All Frontend Linting Passed ==='
+      "
+    profiles:
+      - lint
+
+  # Run all linters
+  lint-all:
+    image: alpine:latest
+    depends_on:
+      - backend-lint
+      - frontend-lint
+    command: echo "All linting completed successfully!"
+    profiles:
+      - lint

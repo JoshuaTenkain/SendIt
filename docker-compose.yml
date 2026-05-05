@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: sendit-db
+    environment:
+      POSTGRES_USER: sendit
+      POSTGRES_PASSWORD: sendit
+      POSTGRES_DB: sendit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sendit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sendit-backend
+    environment:
+      SENDIT_DATABASE_URL: postgresql+psycopg://sendit:sendit@db:5432/sendit
+      SENDIT_JWT_SECRET_KEY: ${SENDIT_JWT_SECRET_KEY:-change-me-in-production}
+      SENDIT_SENDGRID_API_KEY: ${SENDIT_SENDGRID_API_KEY:-}
+      SENDIT_PAYFAST_MERCHANT_ID: ${SENDIT_PAYFAST_MERCHANT_ID:-}
+      SENDIT_PAYFAST_MERCHANT_KEY: ${SENDIT_PAYFAST_MERCHANT_KEY:-}
+      SENDIT_PAYFAST_PASSPHRASE: ${SENDIT_PAYFAST_PASSPHRASE:-}
+      SENDIT_PAYFAST_SANDBOX: ${SENDIT_PAYFAST_SANDBOX:-true}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sendit-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+
+volumes:
+  postgres_data:
