@@ -6,7 +6,7 @@ export class ApiError extends Error {
   }
 }
 
-async function fetchApi(endpoint: string, options: RequestInit = {}) {
+async function fetchApi(endpoint: string, options: RequestInit = {}, retries = 3) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   const headers: Record<string, string> = {
@@ -18,21 +18,43 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-    throw new ApiError(response.status, error.detail || 'Request failed');
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        signal: controller.signal,
+        headers,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+        throw new ApiError(response.status, error.detail || 'Request failed');
+      }
+
+      if (response.status === 204) {
+        return null;
+      }
+
+      return response.json();
+    } catch (e) {
+      if (e instanceof ApiError) {
+        throw e;
+      }
+      
+      // Network error or timeout
+      if (attempt === retries - 1) {
+        throw new ApiError(0, 'Network error. Please check your connection and try again.');
+      }
+      
+      // Exponential backoff before retry
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
   }
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  return response.json();
 }
 
 export const api = {

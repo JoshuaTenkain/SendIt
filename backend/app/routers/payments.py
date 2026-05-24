@@ -31,15 +31,17 @@ async def payfast_itn(
     form_data = await request.form()
     post_data = dict(form_data)
 
-    logger.info("payfast_itn_received", payment_id=m_payment_id, status=payment_status)
+    logger.info("payfast_itn_received", payment_id=m_payment_id, status=payment_status, amount=amount_gross)
 
-    if not payfast_client.verify_itn_signature(post_data):
-        logger.warning("payfast_itn_invalid_signature", payment_id=m_payment_id)
+    signature_valid = payfast_client.verify_itn_signature(post_data)
+    if not signature_valid:
+        logger.warning("payfast_itn_invalid_signature", payment_id=m_payment_id, signature_valid=False)
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     client_ip = request.client.host if request.client else "unknown"
-    if not await payfast_client.verify_itn_source(client_ip):
-        logger.warning("payfast_itn_invalid_source", payment_id=m_payment_id, ip=client_ip)
+    source_valid = await payfast_client.verify_itn_source(client_ip)
+    if not source_valid:
+        logger.warning("payfast_itn_invalid_source", payment_id=m_payment_id, ip=client_ip, source_valid=False)
 
     try:
         booking_id = uuid.UUID(m_payment_id)
@@ -52,8 +54,14 @@ async def payfast_itn(
         logger.error("payfast_itn_booking_not_found", booking_id=booking_id)
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    if not await payfast_client.verify_payment_amount(post_data, float(booking.price_total)):
-        logger.warning("payfast_itn_amount_mismatch", booking_id=booking_id)
+    amount_valid = await payfast_client.verify_payment_amount(post_data, float(booking.price_total))
+    if not amount_valid:
+        logger.warning(
+            "payfast_itn_amount_mismatch",
+            booking_id=booking_id,
+            expected_amount=float(booking.price_total),
+            received_amount=amount_gross,
+        )
         raise HTTPException(status_code=400, detail="Amount mismatch")
 
     if payment_status == "COMPLETE":
@@ -63,6 +71,12 @@ async def payfast_itn(
             provider_reference=pf_payment_id,
             raw_payload=post_data,
         )
-        logger.info("payfast_itn_payment_confirmed", booking_id=booking_id)
+        logger.info(
+            "payfast_itn_payment_confirmed",
+            booking_id=booking_id,
+            pf_payment_id=pf_payment_id,
+            amount=amount_gross,
+            status=payment_status,
+        )
 
     return {"status": "ok"}

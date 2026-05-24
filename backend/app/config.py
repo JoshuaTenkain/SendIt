@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://sendit:sendit@localhost:5432/sendit"
 
-    jwt_secret_key: str = "change-me"
+    jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_access_token_exp_minutes: int = 60
 
@@ -35,9 +35,10 @@ class Settings(BaseSettings):
     # Public URL bases (used for guest magic links + webhook notify URLs)
     frontend_base_url: str = "http://localhost:3000"
     api_base_url: str = "http://localhost:8000"
+    cors_origins: list[str] = ["http://localhost:3000"]
 
     # Guest quote tokens
-    guest_token_secret: str = "change-me-guest"
+    guest_token_secret: str
     guest_token_max_age_hours: int = 72
 
     # Stripe (subscriptions)
@@ -46,6 +47,9 @@ class Settings(BaseSettings):
 
     # VAT
     vat_rate_pct: int = 15
+
+    # Error tracking (Sentry)
+    sentry_dsn: str | None = None
 
 
 settings = Settings()

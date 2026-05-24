@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 class ParcelIn(BaseModel):
@@ -52,6 +52,13 @@ class QuoteCreateGuest(BaseModel):
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=40)
     consent: bool = Field(default=False)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: str | None) -> str | None:
+        if v and len(v) < 10:
+            raise ValueError("Phone must be at least 10 digits")
+        return v
 
     @model_validator(mode="after")
     def _require_consent_if_email(self):

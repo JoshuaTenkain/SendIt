@@ -11,8 +11,12 @@ from app.config import settings
 
 class PayFastClient:
     def __init__(self):
-        self.merchant_id = settings.payfast_merchant_id or "10000100"
-        self.merchant_key = settings.payfast_merchant_key or "46f0cd694581a"
+        if not settings.payfast_merchant_id:
+            raise ValueError("PayFast merchant ID not configured (SENDIT_PAYFAST_MERCHANT_ID)")
+        if not settings.payfast_merchant_key:
+            raise ValueError("PayFast merchant key not configured (SENDIT_PAYFAST_MERCHANT_KEY)")
+        self.merchant_id = settings.payfast_merchant_id
+        self.merchant_key = settings.payfast_merchant_key
         self.passphrase = settings.payfast_passphrase or ""
         self.sandbox = settings.payfast_sandbox
 
