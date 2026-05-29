@@ -1,7 +1,17 @@
+import os
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
+
+# Set test environment variables BEFORE importing app config
+os.environ.setdefault("SENDIT_ENV", "test")
+os.environ.setdefault("SENDIT_JWT_SECRET_KEY", "test-secret-key-for-testing-only")
+os.environ.setdefault("SENDIT_GUEST_TOKEN_SECRET", "test-guest-secret-key-for-testing-only")
+os.environ.setdefault("SENDIT_DATABASE_URL", "sqlite:///./test.db")
+os.environ.setdefault("SENDIT_PAYFAST_MERCHANT_ID", "test-merchant")
+os.environ.setdefault("SENDIT_PAYFAST_MERCHANT_KEY", "test-key")
+os.environ.setdefault("SENDIT_PAYFAST_PASSPHRASE", "test-passphrase")
 
 from app.database import Base, get_db
 from app.main import app

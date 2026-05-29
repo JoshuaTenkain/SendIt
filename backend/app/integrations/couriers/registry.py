@@ -22,6 +22,7 @@ from app.integrations.couriers.aramex import AramexAdapter
 from app.integrations.couriers.base import CourierAdapter
 from app.integrations.couriers.courier_guy import CourierGuyAdapter
 from app.integrations.couriers.csv_table import CSVTableAdapter
+from app.integrations.couriers.dhl import DHLAdapter
 from app.integrations.couriers.mock import MockCourierAdapter
 from app.integrations.couriers.pargo import PargoAdapter
 from app.integrations.couriers.tcg import TCGAdapter
@@ -81,19 +82,25 @@ class CourierRegistry:
 
 def _build_adapter(*, db: Session, courier: Courier) -> CourierAdapter | None:
     """Map a ``Courier`` DB row to a concrete adapter instance."""
+    from app.config import settings
+
     code = (courier.adapter_code or courier.code or "").lower()
     if code == "tcg":
-        from app.config import settings
-
         if not settings.tcg_enabled or not settings.tcg_api_token:
             return None
         return TCGAdapter(markup_pct=int(courier.base_markup_pct or 0))
+    if code == "aramex":
+        if not settings.aramex_enabled or not settings.aramex_api_key:
+            return None
+        return AramexAdapter(markup_pct=int(courier.base_markup_pct or 0))
+    if code == "dhl":
+        if not settings.dhl_enabled or not settings.dhl_api_key:
+            return None
+        return DHLAdapter(markup_pct=int(courier.base_markup_pct or 0))
     if code == "csv_table":
         return CSVTableAdapter(db=db, courier=courier)
     if code == "mock":
         return MockCourierAdapter()
-    if code == "aramex":
-        return AramexAdapter()
     if code in ("courier_guy_stub", "courier_guy"):
         return CourierGuyAdapter()
     if code == "pargo":

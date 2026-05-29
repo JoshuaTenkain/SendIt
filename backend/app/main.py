@@ -12,7 +12,7 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.database import get_db
-from app.routers import addresses, admin, auth, bookings, payments, quotes, shipments, tracking
+from app.routers import addresses, admin, auth, bookings, payments, quote_templates, quotes, shipments, tracking
 from app.utils.logging import configure_logging
 from sqlalchemy.orm import Session
 
@@ -107,6 +107,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(addresses.router)
 app.include_router(quotes.router)
+app.include_router(quote_templates.router)
 app.include_router(bookings.router)
 app.include_router(payments.router)
 app.include_router(tracking.router)

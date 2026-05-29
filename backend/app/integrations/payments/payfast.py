@@ -11,10 +11,6 @@ from app.config import settings
 
 class PayFastClient:
     def __init__(self):
-        if not settings.payfast_merchant_id:
-            raise ValueError("PayFast merchant ID not configured (SENDIT_PAYFAST_MERCHANT_ID)")
-        if not settings.payfast_merchant_key:
-            raise ValueError("PayFast merchant key not configured (SENDIT_PAYFAST_MERCHANT_KEY)")
         self.merchant_id = settings.payfast_merchant_id
         self.merchant_key = settings.payfast_merchant_key
         self.passphrase = settings.payfast_passphrase or ""
@@ -24,6 +20,13 @@ class PayFastClient:
             self.base_url = "https://sandbox.payfast.co.za"
         else:
             self.base_url = "https://www.payfast.co.za"
+
+    def _check_configured(self):
+        """Check if PayFast is configured before use."""
+        if not self.merchant_id:
+            raise ValueError("PayFast merchant ID not configured (SENDIT_PAYFAST_MERCHANT_ID)")
+        if not self.merchant_key:
+            raise ValueError("PayFast merchant key not configured (SENDIT_PAYFAST_MERCHANT_KEY)")
 
     def generate_payment_data(
         self,
@@ -36,6 +39,7 @@ class PayFastClient:
         cancel_url: str,
         notify_url: str,
     ) -> dict[str, Any]:
+        self._check_configured()
         data = {
             "merchant_id": self.merchant_id,
             "merchant_key": self.merchant_key,

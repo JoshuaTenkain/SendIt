@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     sendgrid_api_key: str | None = None
     sendgrid_from_email: str = "no-reply@send-it.local"
 
+    # Twilio SMS Integration (optional)
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_from_number: str | None = None
+
     payfast_merchant_id: str | None = None
     payfast_merchant_key: str | None = None
     payfast_passphrase: str | None = None
@@ -31,6 +36,15 @@ class Settings(BaseSettings):
     tcg_webhook_secret: str | None = None
     tcg_default_collection_email: str = "ops@send-it.local"
     tcg_default_collection_mobile: str = "0000000000"
+
+    # Aramex
+    aramex_enabled: bool = False
+    aramex_api_key: str | None = None
+    aramex_account_number: str | None = None
+
+    # DHL Express
+    dhl_enabled: bool = False
+    dhl_api_key: str | None = None
 
     # Public URL bases (used for guest magic links + webhook notify URLs)
     frontend_base_url: str = "http://localhost:3000"
@@ -47,6 +61,9 @@ class Settings(BaseSettings):
 
     # VAT
     vat_rate_pct: int = 15
+
+    # Redis (caching, sessions, job queue)
+    redis_url: str | None = "redis://localhost:6379/0"
 
     # Error tracking (Sentry)
     sentry_dsn: str | None = None
